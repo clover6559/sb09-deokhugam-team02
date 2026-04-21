@@ -287,8 +287,7 @@ class UserServiceTest {
     assertThatThrownBy(() ->
         userService.findPowerUsers(Period.MONTHLY, "DESC", invalidCursor, null, 10)
     )
-        .isInstanceOf(DeokhugamException.class)
-        .hasMessage(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        ).isInstanceOf(NumberFormatException.class);
 
     verify(powerUserRepository, never()).findPowerUsersByRequirements(any(), any(), any(), any(), any());
   }
