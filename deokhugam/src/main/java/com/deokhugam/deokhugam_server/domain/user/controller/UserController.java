@@ -12,6 +12,7 @@ import com.deokhugam.deokhugam_server.domain.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -78,7 +79,7 @@ public class UserController {
       @RequestParam(defaultValue = "DAILY") Period period,
       @RequestParam(defaultValue = "ASC") String direction,
       @RequestParam(required = false) String cursor,
-      @RequestParam(required = false) String after,
+      @RequestParam(required = false) LocalDateTime after,
       @RequestParam(defaultValue = "50") int limit
   ) {
     CursorPageResponse<PowerUserDto> response = userService.findPowerUsers(period, direction,
