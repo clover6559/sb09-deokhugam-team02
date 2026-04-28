@@ -14,6 +14,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.deokhugam.deokhugam_server.domain.book.client.BookInfoClient;
+import com.deokhugam.deokhugam_server.domain.book.client.TextExtractionClient;
+import com.deokhugam.deokhugam_server.domain.book.client.TextExtractionResult;
 import com.deokhugam.deokhugam_server.domain.book.dto.request.BookCreateRequest;
 import com.deokhugam.deokhugam_server.domain.book.dto.request.BookSearchRequest;
 import com.deokhugam.deokhugam_server.domain.book.dto.request.BookUpdateRequest;
@@ -23,8 +26,6 @@ import com.deokhugam.deokhugam_server.domain.book.dto.response.NaverBookDto;
 import com.deokhugam.deokhugam_server.domain.book.dto.response.PopularBookDto;
 import com.deokhugam.deokhugam_server.domain.book.entity.Book;
 import com.deokhugam.deokhugam_server.domain.book.entity.PopularBook;
-import com.deokhugam.deokhugam_server.domain.book.client.NaverBookClient;
-import com.deokhugam.deokhugam_server.domain.book.client.OcrSpaceClient;
 import com.deokhugam.deokhugam_server.domain.book.mapper.BookMapper;
 import com.deokhugam.deokhugam_server.domain.book.repository.BookRepository;
 import com.deokhugam.deokhugam_server.domain.book.repository.PopularBookRepository;
@@ -59,10 +60,10 @@ class BookServiceImplTest {
   private BookMapper bookMapper;
 
   @Mock
-  private OcrSpaceClient ocrSpaceClient;
+  private TextExtractionClient textExtractionClient;
 
   @Mock
-  private NaverBookClient naverBookClient;
+  private BookInfoClient bookInfoClient;
 
   @InjectMocks
   private BookServiceImpl bookService;
@@ -336,6 +337,72 @@ class BookServiceImplTest {
   }
 
   @Test
+  @DisplayName("도서 수정 시 ISBN은 변경되지 않는다")
+  void updateBook_isbnNotChanged() {
+    UUID bookId = UUID.randomUUID();
+    LocalDateTime now = LocalDateTime.now();
+
+    Book book = mock(Book.class);
+
+    BookUpdateRequest request = new BookUpdateRequest(
+      "수정된 제목",
+      "수정된 저자",
+      "수정된 출판사",
+      "수정된 설명",
+      LocalDate.of(2025, 1, 1)
+    );
+
+    BookSearchQueryDto queryDto = new BookSearchQueryDto(
+      bookId,
+      "수정된 제목",
+      "수정된 저자",
+      "수정된 설명",
+      "수정된 출판사",
+      LocalDate.of(2025, 1, 1),
+      "1234567890",
+      null,
+      0L,
+      0.0,
+      now,
+      now
+    );
+
+    BookDto expectedDto = new BookDto(
+      bookId,
+      "수정된 제목",
+      "수정된 저자",
+      "수정된 설명",
+      "수정된 출판사",
+      LocalDate.of(2025, 1, 1),
+      "1234567890",
+      null,
+      0,
+      0.0,
+      now,
+      now
+    );
+
+    when(bookRepository.findByIdAndIsDeletedFalse(bookId)).thenReturn(Optional.of(book));
+    when(book.getId()).thenReturn(bookId);
+    when(bookRepository.findBookDetail(bookId)).thenReturn(queryDto);
+    when(bookMapper.toDto(queryDto)).thenReturn(expectedDto);
+
+    BookDto result = bookService.updateBook(bookId, request, null);
+
+    assertNotNull(result);
+    assertEquals("1234567890", result.isbn());
+
+    verify(book).update(
+      eq("수정된 제목"),
+      eq("수정된 저자"),
+      eq("수정된 출판사"),
+      eq("수정된 설명"),
+      eq(null),
+      eq(LocalDate.of(2025, 1, 1))
+    );
+  }
+
+  @Test
   @DisplayName("도서 수정 실패 - 없는 도서")
   void updateBook_fail_notFound() {
     UUID bookId = UUID.randomUUID();
@@ -421,7 +488,8 @@ class BookServiceImplTest {
       "dummy".getBytes()
     );
 
-    when(ocrSpaceClient.parseText(image)).thenReturn("ISBN 978-89-1234-567-8");
+    when(textExtractionClient.extractText(image))
+        .thenReturn(new TextExtractionResult("ISBN 978-89-1234-567-8", "OCR_SPACE"));
 
     String result = bookService.extractIsbn(image);
 
@@ -438,7 +506,8 @@ class BookServiceImplTest {
       "dummy".getBytes()
     );
 
-    when(ocrSpaceClient.parseText(image)).thenReturn("ISBN 89-1234-567X");
+    when(textExtractionClient.extractText(image))
+        .thenReturn(new TextExtractionResult("ISBN 89-1234-567X", "OCR_SPACE"));
 
     String result = bookService.extractIsbn(image);
 
@@ -489,7 +558,8 @@ class BookServiceImplTest {
       "dummy".getBytes()
     );
 
-    when(ocrSpaceClient.parseText(image)).thenReturn("no isbn text");
+    when(textExtractionClient.extractText(image))
+        .thenReturn(new TextExtractionResult("no isbn text", "OCR_SPACE"));
 
     DeokhugamException exception = assertThrows(DeokhugamException.class, () ->
       bookService.extractIsbn(image)
@@ -503,6 +573,7 @@ class BookServiceImplTest {
   void getBookInfo_success() {
     String isbn = "978-89-1234-567-8";
     String normalizedIsbn = "9788912345678";
+
     NaverBookDto expected = new NaverBookDto(
       "클린 코드",
       "로버트 마틴",
@@ -513,7 +584,7 @@ class BookServiceImplTest {
       "https://image.test/book.png"
     );
 
-    when(naverBookClient.searchByIsbn(normalizedIsbn)).thenReturn(expected);
+    when(bookInfoClient.searchByIsbn(normalizedIsbn)).thenReturn(expected);
 
     NaverBookDto result = bookService.getBookInfo(isbn);
 
@@ -530,7 +601,7 @@ class BookServiceImplTest {
     String isbn = "978-89-1234-567-8";
     String normalizedIsbn = "9788912345678";
 
-    when(naverBookClient.searchByIsbn(normalizedIsbn))
+    when(bookInfoClient.searchByIsbn(normalizedIsbn))
       .thenThrow(new DeokhugamException(ErrorCode.BOOK_INFO_NOT_FOUND));
 
     DeokhugamException exception = assertThrows(DeokhugamException.class, () ->
