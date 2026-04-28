@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.deokhugam.deokhugam_server.domain.book.repository.BookRepository;
 import com.deokhugam.deokhugam_server.domain.review.dto.response.ReviewRankQueryDto;
 import com.deokhugam.deokhugam_server.domain.review.entity.PopularReview;
 import com.deokhugam.deokhugam_server.domain.review.entity.Review;
@@ -13,7 +12,6 @@ import com.deokhugam.deokhugam_server.domain.review.mapper.ReviewMapper;
 import com.deokhugam.deokhugam_server.domain.review.repository.PopularReviewRepository;
 import com.deokhugam.deokhugam_server.domain.review.repository.ReviewRepository;
 import com.deokhugam.deokhugam_server.domain.user.entity.User;
-import com.deokhugam.deokhugam_server.domain.user.repository.UserRepository;
 import com.deokhugam.deokhugam_server.global.type.Period;
 import java.util.Collections;
 import java.util.List;
@@ -34,8 +32,6 @@ class PopularReviewServiceTest {
 
   @Mock private ReviewRepository reviewRepository;
   @Mock private PopularReviewRepository popularReviewRepository;
-  @Mock private BookRepository bookRepository;
-  @Mock private UserRepository userRepository;
   @Mock private ReviewMapper reviewMapper;
   @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -43,8 +39,7 @@ class PopularReviewServiceTest {
   void setUp() {
     closeable = MockitoAnnotations.openMocks(this);
     popularReviewService = new PopularReviewService(
-        reviewRepository, popularReviewRepository, bookRepository,
-        userRepository, reviewMapper, eventPublisher
+        reviewRepository, popularReviewRepository, reviewMapper, eventPublisher
     );
   }
 
