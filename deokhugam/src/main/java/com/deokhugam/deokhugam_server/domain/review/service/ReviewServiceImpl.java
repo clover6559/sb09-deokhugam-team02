@@ -2,7 +2,6 @@ package com.deokhugam.deokhugam_server.domain.review.service;
 
 
 import com.deokhugam.deokhugam_server.domain.book.entity.Book;
-import com.deokhugam.deokhugam_server.domain.book.entity.PopularBook;
 import com.deokhugam.deokhugam_server.domain.book.repository.BookRepository;
 import com.deokhugam.deokhugam_server.domain.review.dto.request.ReviewCreateRequest;
 import com.deokhugam.deokhugam_server.domain.review.dto.request.ReviewSearchRequest;
