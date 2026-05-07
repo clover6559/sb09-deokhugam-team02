@@ -3,6 +3,10 @@ name: CD
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'deokhugam/docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -47,6 +51,13 @@ jobs:
         run: ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification
         env:
           SPRING_PROFILES_ACTIVE: test
+
+      - name: Codecov 업로드
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: deokhugam/build/reports/jacoco/test/jacocoTestReport.xml
+          fail_ci_if_error: false
 
   deploy:
     name: Deploy to ECS
